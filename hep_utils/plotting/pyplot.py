@@ -1,4 +1,6 @@
-from typing import Union, Tuple
+
+"""Utils for plotting with matplotlib.pyplot"""
+from typing import Any, Dict, Union, Tuple
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from hep_utils.formulas import norm1
@@ -28,8 +30,13 @@ def plot_rings_profile(df: Union[pd.DataFrame, npt.NDArray[np.float_]],
 
     Returns
     -------
-    _type_
-        _description_
+    Tuple[mpl.Axes,npt.NDArray[np.float_],npt.NDArray[np.float_]]
+        ax: mpl.Axes
+            The ax where the data was plotted
+        mean: npt.NDArray[np.float_]
+            The mean profile of the rings
+        std: npt.NDArray[np.float_]
+            The standard deviation of the rings
     """
     if isinstance(df, pd.DataFrame):
         rings = df.values
@@ -55,3 +62,66 @@ def plot_rings_profile(df: Union[pd.DataFrame, npt.NDArray[np.float_]],
     ax.set_xlabel('Ring index')
     ax.set_ylabel('Normalized energy')
     return ax, mean, std
+
+
+def histplot(data: Union[pd.Series, npt.NDArray[np.number]],
+             nbins: int = 100,
+             ax: mpl.Axes = None,
+             metrics: bool = False,
+             legend_kwargs: Dict[str, Any] = {},
+             ax_set: Dict[str, Any] = {},
+             hist_kwargs: Dict[str, Any] = {}
+             ) -> Tuple[mpl.Axes, Dict[str, Any]]:
+    """
+    Plots a histogram of the data.
+
+    Parameters
+    ----------
+    data : Union[pd.Series, npt.NDArray[np.number]]
+        Data to plot
+    nbins : int, optional
+        Number of equally spaced bins, by default 100.
+        If bins arg is passed in hist_kwargs, this is ignored.
+    ax : mpl.Axes, optional
+        Ax to plot the data, by default plt.gca()
+    metrics : bool, optional
+        If True writes mean, std, min, max and samples values in the legend, by default False
+    legend_kwargs : Dict[str, Any], optional
+        Kwargs for mpl.Axes.legend, by default {}.
+        Used only when metrics is True.
+    ax_set : Dict[str, Any], optional
+        Kwargs for mpl.Axes.set, by default {}
+    hist_kwargs : Dict[str, Any], optional
+        Kwargs for mpl.Axes.hist, by default {}
+
+    Returns
+    -------
+    Tuple[mpl.Axes, Dict[str, Any]]
+        mpl.Axes
+            The ax where the data was plotted
+        Dict[str, Any]
+            Dictionary with the metrics of the data.
+            Empty dict if metrics is False.
+    """
+    if ax is None:
+        ax = plt.gca()
+    min_val = data.min()
+    max_val = data.max()
+    if hist_kwargs.get('bins') is None:
+        hist_kwargs['bins'] = np.linspace(min_val, max_val, nbins)
+    ax.hist(data, **hist_kwargs)
+    ax.set(**ax_set)
+    if metrics:
+        metrics_dict = {
+            'Samples': len(data),
+            'Mean': data.mean(),
+            'Std': data.std(),
+            'Min': min_val,
+            'Max': max_val
+        }
+        for key, value in metrics_dict.items():
+            ax.plot([], [], ' ', label=f'{key}: {value:.2f}')
+        ax.legend(**legend_kwargs)
+        return ax, metrics_dict
+    else:
+        return ax, {}
