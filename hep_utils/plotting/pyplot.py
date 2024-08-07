@@ -1,7 +1,6 @@
 
 """Utils for plotting with matplotlib.pyplot"""
-from typing import Any, Dict, Union, Tuple
-import matplotlib as mpl
+from typing import Any, Dict, Optional, Union, Tuple
 import matplotlib.pyplot as plt
 from hep_utils.formulas import norm1
 from hep_utils.constants import RINGS_LAYERS
@@ -11,9 +10,9 @@ import numpy.typing as npt
 
 
 def plot_rings_profile(df: Union[pd.DataFrame, npt.NDArray[np.float_]],
-                       ax: mpl.Axes = None,
+                       ax: Optional[plt.Axes] = None,
                        normalize: bool = True
-                       ) -> Tuple[mpl.Axes,
+                       ) -> Tuple[plt.Axes,
                                   npt.NDArray[np.float_],
                                   npt.NDArray[np.float_]]:
     """
@@ -23,15 +22,15 @@ def plot_rings_profile(df: Union[pd.DataFrame, npt.NDArray[np.float_]],
     ----------
     df : Union[pd.DataFrame, npt.NDArray[np.float_]]
         Dataframe containing the rings or the rings array
-    ax : mpl.Axes, optional
+    ax : plt.Axes, optional
         Ax to plot the data, by default None
     normalize : bool, optional
         If True, normalizes the rings with norm1, by default True
 
     Returns
     -------
-    Tuple[mpl.Axes,npt.NDArray[np.float_],npt.NDArray[np.float_]]
-        ax: mpl.Axes
+    Tuple[plt.Axes,npt.NDArray[np.float_],npt.NDArray[np.float_]]
+        ax: plt.Axes
             The ax where the data was plotted
         mean: npt.NDArray[np.float_]
             The mean profile of the rings
@@ -66,12 +65,12 @@ def plot_rings_profile(df: Union[pd.DataFrame, npt.NDArray[np.float_]],
 
 def histplot(data: Union[pd.Series, npt.NDArray[np.number]],
              nbins: int = 100,
-             ax: mpl.Axes = None,
+             ax: Optional[plt.Axes] = None,
              metrics: bool = False,
              legend_kwargs: Dict[str, Any] = {},
              ax_set: Dict[str, Any] = {},
              hist_kwargs: Dict[str, Any] = {}
-             ) -> Tuple[mpl.Axes, Dict[str, Any]]:
+             ) -> Tuple[plt.Axes, Dict[str, Any]]:
     """
     Plots a histogram of the data.
 
@@ -82,22 +81,23 @@ def histplot(data: Union[pd.Series, npt.NDArray[np.number]],
     nbins : int, optional
         Number of equally spaced bins, by default 100.
         If bins arg is passed in hist_kwargs, this is ignored.
-    ax : mpl.Axes, optional
+    ax : plt.Axes, optional
         Ax to plot the data, by default plt.gca()
     metrics : bool, optional
-        If True writes mean, std, min, max and samples values in the legend, by default False
+        If True writes mean, std, min, max and samples values in the legend,
+        by default False
     legend_kwargs : Dict[str, Any], optional
-        Kwargs for mpl.Axes.legend, by default {}.
+        Kwargs for plt.Axes.legend, by default {}.
         Used only when metrics is True.
     ax_set : Dict[str, Any], optional
-        Kwargs for mpl.Axes.set, by default {}
+        Kwargs for plt.Axes.set, by default {}
     hist_kwargs : Dict[str, Any], optional
-        Kwargs for mpl.Axes.hist, by default {}
+        Kwargs for plt.Axes.hist, by default {}
 
     Returns
     -------
-    Tuple[mpl.Axes, Dict[str, Any]]
-        mpl.Axes
+    Tuple[plt.Axes, Dict[str, Any]]
+        plt.Axes
             The ax where the data was plotted
         Dict[str, Any]
             Dictionary with the metrics of the data.
@@ -120,7 +120,72 @@ def histplot(data: Union[pd.Series, npt.NDArray[np.number]],
             'Max': max_val
         }
         for key, value in metrics_dict.items():
-            ax.plot([], [], ' ', label=f'{key}: {value:.2f}')
+            if isinstance(value, (int, np.integer)):
+                ax.plot([], [], ' ', label=f'{key}: {value}')
+            else:
+                ax.plot([], [], ' ', label=f'{key}: {value:.2f}')
+        ax.legend(**legend_kwargs)
+        return ax, metrics_dict
+    else:
+        return ax, {}
+
+
+def categorical_histplot(data: Union[pd.Series, npt.NDArray[np.number]],
+                         ax: Optional[plt.Axes] = None,
+                         metrics: bool = False,
+                         percentage: bool = False,
+                         legend_kwargs: Dict[str, Any] = {},
+                         ax_set: Dict[str, Any] = {},
+                         bar_kwargs: Dict[str, Any] = {}
+                         ) -> Tuple[plt.Axes, Dict[str, Any]]:
+    """
+    Plots a categorical histogram of the data.
+    This hist differs from histplot because it counts the number of samples
+    and the ticks are centered.
+
+    Parameters
+    ----------
+    data : Union[pd.Series, npt.NDArray[np.number]]
+        Data to plot
+    ax : plt.Axes, optional
+        Ax to plot the data, by default plt.gca()
+    metrics : bool, optional
+        If True writes mean, std, min, max and samples values in the legend,
+        by default False
+    percentage : bool, optional
+        If True, the y-axis is in percentage, by default False
+    legend_kwargs : Dict[str, Any], optional
+        Kwargs for plt.Axes.legend, by default {}.
+        Used only when metrics is True.
+    ax_set : Dict[str, Any], optional
+        Kwargs for plt.Axes.set, by default {}
+    bar_kwargs : Dict[str, Any], optional
+        Kwargs for plt.Axes.bar, by default {}
+
+    Returns
+    -------
+    Tuple[plt.Axes, Dict[str, Any]]
+        plt.Axes
+            The ax where the data was plotted
+        Dict[str, Any]
+            Dictionary with the metrics of the data.
+            Empty dict if metrics is False.
+    """
+    if ax is None:
+        ax = plt.gca()
+    categories, counts = np.unique(data, return_counts=True)
+    n_samples = np.sum(counts)
+    if percentage:
+        counts = 100*counts/n_samples
+    bar_kwargs['align'] = 'center'
+    ax.bar(categories, counts, **bar_kwargs)
+    ax.set(**ax_set)
+    if metrics:
+        metrics_dict = {
+            'Samples': n_samples,
+        }
+        for key, value in metrics_dict.items():
+            ax.plot([], [], ' ', label=f'{key}: {value}')
         ax.legend(**legend_kwargs)
         return ax, metrics_dict
     else:
