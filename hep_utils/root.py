@@ -1,15 +1,15 @@
-from typing import List, Optional
-from ROOT import RDataFrame
+from typing import List, Optional, Tuple
+import ROOT
 import pandas as pd
 
 
-def get_column_names(rdf: RDataFrame) -> List[str]:
+def get_column_names(rdf: ROOT.RDataFrame) -> List[str]:
     """
     Get the column names of a RDataFrame.
 
     Parameters
     ----------
-    rdf : RDataFrame
+    rdf : ROOT.RDataFrame
         The RDataFrame object.
 
     Returns
@@ -20,7 +20,7 @@ def get_column_names(rdf: RDataFrame) -> List[str]:
     return [str(col) for col in rdf.GetColumnNames()]
 
 
-def rdf_to_pandas(rdf: RDataFrame,
+def rdf_to_pandas(rdf: ROOT.RDataFrame,
                   columns: Optional[List[str]] = None,
                   nrows: int = -1) -> pd.DataFrame:
     """
@@ -28,7 +28,7 @@ def rdf_to_pandas(rdf: RDataFrame,
 
     Parameters
     ----------
-    rdf : RDataFrame
+    rdf : ROOT.RDataFrame
         The RDataFrame object.
     columns: Optional[List[str]]
         The columns to convert. By default, all columns are converted.
@@ -56,3 +56,33 @@ def rdf_to_pandas(rdf: RDataFrame,
         else:
             pdf_dict[str(key)] = pdf_dict.pop(key)[:nrows]
     return pd.DataFrame.from_dict(pdf_dict)
+
+
+def open_vector(column: str, vec_len: int, rdf: ROOT.RDataFrame
+                ) -> Tuple[List[str], ROOT.RDataFrame]:
+    """
+    Open a vector "vec" in multiple columns "vec_i".
+    i is the idx of that value in "vec"
+
+    Parameters
+    ----------
+    column : str
+        The column name.
+    vec_len : int
+        The length of the vector.
+    rdf : ROOT.RDataFrame
+        The RDataFrame object.
+
+    Returns
+    -------
+    List[str]
+        List of the created columns.
+    ROOT.RDataFrame
+        The RDataFrame object with the new columns.
+    """
+    column_names = []
+    for i in range(vec_len):
+        new_name = f'{column}_{i}'
+        rdf = rdf.Define(new_name, f'{column}[{i}]')
+        column_names.append(new_name)
+    return column_names, rdf
