@@ -23,13 +23,13 @@ def deltaR(eta1: Number, phi1: Number, eta2: Number, phi2: Number) -> float:
     float
         deltaR between the two objects
     """
-    deta = eta1 - eta2
-    dphi = np.abs(phi1, phi2)
+    deta = np.abs(eta1 - eta2)
+    dphi = np.abs(phi1 - phi2)
     if isinstance(eta1, np.ndarray):
         dphi[dphi >= np.pi] = 2*np.pi - dphi[dphi >= np.pi]
     elif dphi >= np.pi:
         dphi = 2*np.pi - dphi
-    return np.sqrt(deta*deta + dphi*dphi)
+    return np.sqrt((deta**2) + (dphi**2))
 
 
 def norm1(data: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
