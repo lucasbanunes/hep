@@ -222,8 +222,12 @@ def histplot(data: Union[pd.Series, npt.NDArray[np.number]],
         ax = plt.gca()
     if bin_max is None:
         bin_max = data.max()
+    else:
+        data = data[data <= bin_max]
     if bin_min is None:
         bin_min = data.min()
+    else:
+        data = data[data >= bin_min]
     if hist_kwargs.get('bins') is None:
         hist_kwargs['bins'] = np.linspace(bin_min, bin_max, nbins)
     ax.hist(data, **hist_kwargs)
